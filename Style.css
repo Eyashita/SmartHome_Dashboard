@@ -1,0 +1,29 @@
+.card {
+    background-color: rgba(53, 152, 238, 0.297);
+    border-radius: 8px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    margin: 10px;
+    margin-right: 30px;
+    min-width: 330px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+}
+
+.card h3 {
+    margin-top: 0;
+    font-size: 1em;
+}
+
+.card p {
+    font-size: 2em;
+}
+
+.main-container{
+    display: flex;
+    flex-direction: row ;
+    flex-wrap: wrap;
+    justify-content:flex-start;
+}
