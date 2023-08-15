@@ -18,7 +18,7 @@ st.set_page_config(page_title="Dynamic Dashboard", page_icon = ":electric_plug:"
 def local_css(file_name):
  with open(file_name) as f:
   st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-local_css("D:\DA Internship Project\Dashboard\Style.css")
+local_css("./Style.css")
 
 # --- Function to import Lottiefiles ---
 def load_lottiurl(url):
