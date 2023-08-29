@@ -45,43 +45,51 @@ if fl is not None:
     st.write(filename)
     df = pd.read_csv(filename, encoding = "ISO-8859-1")
 else:
-    os.chdir(r"D:\DA Internship Project")
-    df = pd.read_csv("HouseHold Data.csv", encoding = "ISO-8859-1")
+    os.chdir(r"D:/Projects/Dashboard")
+    df = pd.read_csv("data.csv", encoding = "ISO-8859-1")
 
 # --- Dates --------------------------------------------------------------------------------------------------------
-col1, col2 = st.columns((2))
-df["Date"] = pd.to_datetime(df["Date"], format="%d-%m-%Y")
+df["Timestamp"] = pd.to_datetime(df["Timestamp"])
+df["Date"] = df['Timestamp'].dt.date
 
 # Getting min and max date
 startDate = pd.to_datetime(df["Date"]).min()
 endDate = pd.to_datetime(df["Date"]).max()
-  
+
+col1, col2 = st.columns((2))  
 with col1:
-    date1 = pd.to_datetime(st.date_input("Start Date", startDate))
+    date1 = st.date_input("Start Date", startDate)
 with col2:
-    date2 = pd.to_datetime(st.date_input("End Date", endDate))
+    date2 = st.date_input("End Date", endDate)
 
-df = df[(df["Date"] >= date1) & (df["Date"] <= date2)].copy()
+date1 = pd.Timestamp(date1)
+date2 = pd.Timestamp(date2)
+
+df = df[(df["Date"] >= date1.date()) & (df["Date"] <= date2.date())].copy()
+# Drop columns with null values
+df.dropna(axis=1, inplace=True)
 st.write("---")
-#st.write(df.describe())
 
-# --- Filter data ------------------------------------------------------------------------------------------------------------
-st.sidebar.header("Choose your filter:")
-LOADS = st.sidebar.multiselect("Pick a LOAD", df["LOADS"].unique())
-if not LOADS:
-    df2 = df.copy()
-else:
-    df2 = df[df["LOADS"].isin(LOADS)]
 # ----------------------------------------------------------------------------
 
-# --- Average Current ---
+# --- Creating AVG. columns ---
+df['Current'] = df[['Current-1', 'Current-2', 'Current-3', 'Current-4', 'Current-5', 'Current-6', 'Current-7', 'Current-8']].mean(axis=1)
+df['Voltage'] = df[['Voltage-1', 'Voltage-2', 'Voltage-3', 'Voltage-4', 'Voltage-5', 'Voltage-6', 'Voltage-7', 'Voltage-8']].mean(axis=1)
+df['Power'] = df[['Power-1', 'Power-2', 'Power-3', 'Power-4', 'Power-5', 'Power-6', 'Power-7', 'Power-8']].mean(axis=1)
+df['Frequency'] = df[['Frequency-1', 'Frequency-2', 'Frequency-3', 'Frequency-4', 'Frequency-5', 'Frequency-6', 'Frequency-7', 'Frequency-8']].mean(axis=1)
+df['Power Factor'] = df[['Powerfactor-1', 'Powerfactor-2', 'Powerfactor-3', 'Powerfactor-4', 'Powerfactor-5', 'Powerfactor-6', 'Powerfactor-7', 'Powerfactor-8']].mean(axis=1)
+df['Energy'] = df[['Energy-1', 'Energy-2', 'Energy-3', 'Energy-4', 'Energy-5', 'Energy-6', 'Energy-7', 'Energy-8']].mean(axis=1)
+# Drop columns with null values
+df.dropna(axis=1, inplace=True)
+# Display the filtered DataFrame
+st.write(df)
 
+# --- Average Current ---
 def current_average():
     current_values = df["Current"]
     if current_values.empty:
         return None
-    total = current_values.sum()
-    avg = total / len(current_values)
+    avg = current_values.mean()
     return round(avg, 3)
 
 # --- Average Power ---
@@ -89,8 +97,7 @@ def power_average():
     power_values = df["Power"]
     if power_values.empty:
         return None
-    total = power_values.sum()
-    avg = total / len(power_values)
+    avg = power_values.mean()
     return round(avg, 3)
 
 # --- Average Voltage ---
@@ -122,7 +129,7 @@ def pf_average():
 
 # --- Average Energy ---
 def energy_average():
-    energy_values = df["Energy (in Kwh)"]
+    energy_values = df["Energy"]
     if energy_values.empty:
         return None
     total = energy_values.sum()
@@ -142,15 +149,15 @@ col1, col2, col3 = st.columns(3)
 # Add content to the columns
 with col1:
     avg = current_average()
-    card_data = {"title": "Average Current", "content": avg}
+    card_data = {"title": "Average Current (in A)", "content": avg}
     card(card_data["title"], card_data["content"])
 with col2:
     avg = power_average()
-    card_data = {"title": "Average Power", "content": avg}
+    card_data = {"title": "Average Power (in W)", "content": avg}
     card(card_data["title"], card_data["content"])
 with col3:
     avg = voltage_average()
-    card_data = {"title": "Average Voltage", "content": avg}
+    card_data = {"title": "Average Voltage (in V)", "content": avg}
     card(card_data["title"], card_data["content"])
 
 # Create another row of columns
@@ -167,21 +174,30 @@ with col5:
     card(card_data["title"], card_data["content"])
 with col6:
     avg = energy_average()
-    card_data = {"title": "Average Energy", "content": avg}
+    card_data = {"title": "Average Energy (in Kwh)", "content": avg}
     card(card_data["title"], card_data["content"])
 
 st.write("---")
 # ---------------------------------------------------------------
 
-# --- bar chart ---
-with st.container():
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("Current Vs. Voltage")
-        cd = pd.DataFrame(df["Current"], df["Voltage"])
-        st.bar_chart(cd)
-        with col2:
-            st.subheader("Loads Vs. Voltage")
-            chart_data = pd.DataFrame(df["LOADS"], df["Voltage"])
-            st.bar_chart(chart_data)
+# --- CREATING TABLES FOR LOADS ----------------------------------------------------------------
 
+LOAD_tables = {}  # Create an empty dictionary to store the tables
+
+for i in range(1, 9):  # Adjust the range to match your load count (1 to 8 in this case)
+    LOAD_columns = [f'Voltage-{i}', f'Current-{i}', f'Power-{i}', f'Energy-{i}', f'Powerfactor-{i}', f'Frequency-{i}']
+    LOAD_tables[i] = df[LOAD_columns].copy()  # Store the table in the dictionary
+
+# --- Filter data ------------------------------------------------------------------------------------------------------------
+st.sidebar.header("Choose your filter:")
+selected_loads = st.sidebar.multiselect("Pick LOAD(s)", range(1, 9))  # Allow selecting multiple loads
+
+filtered_tables = [LOAD_tables[i] for i in selected_loads]  # Get the tables for the selected loads
+
+# Display the filtered tables using Streamlit
+for i, table in zip(selected_loads, filtered_tables):
+    avg_voltage = table[f'Voltage-{i}'].mean()
+    round(avg_voltage, 3)
+    # Display the average voltage as a card
+    card_data = {"title": "Average Voltage for Load {i} (in V)", "content": avg_voltage}
+    card(card_data["title"], card_data["content"])
