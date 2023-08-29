@@ -196,8 +196,50 @@ filtered_tables = [LOAD_tables[i] for i in selected_loads]  # Get the tables for
 
 # Display the filtered tables using Streamlit
 for i, table in zip(selected_loads, filtered_tables):
+    avg_current = table[f'Current-{i}'].mean()
     avg_voltage = table[f'Voltage-{i}'].mean()
-    round(avg_voltage, 3)
-    # Display the average voltage as a card
-    card_data = {"title": "Average Voltage for Load {i} (in V)", "content": avg_voltage}
-    card(card_data["title"], card_data["content"])
+    avg_power = table[f'Power-{i}'].mean()
+    avg_pf = table[f'Powerfactor-{i}'].mean()
+    avg_energy = table[f'Energy-{i}'].mean()
+    avg_freq = table[f'Frequency-{i}'].mean()
+    avg_current = round(avg_current, 3)
+    avg_voltage = round(avg_voltage, 3)
+    avg_power = round(avg_power, 3)
+    avg_pf = round(avg_pf, 3)
+    avg_freq = round(avg_freq, 3)
+    avg_energy = round(avg_energy, 3)
+
+    st.markdown(f"<h3 style='text-align:center;'>Load {i}</h3>", unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+    # Add content to the columns
+    with col1:
+        card_data = {"title": "Average Current (in A)", "content": avg_current}
+        card(card_data["title"], card_data["content"])
+    with col2:
+        avg = power_average()
+        card_data = {"title": "Average Power (in W)", "content": avg_power}
+        card(card_data["title"], card_data["content"])
+    with col3:
+        avg = voltage_average()
+        card_data = {"title": "Average Voltage (in V)", "content": avg_voltage}
+        card(card_data["title"], card_data["content"])
+
+    # Create another row of columns
+    col4, col5, col6 = st.columns(3)
+
+    # Add content to the new columns
+    with col4:
+        avg = freq_average()
+        card_data = {"title": "Average Frequency", "content": avg_freq}
+        card(card_data["title"], card_data["content"])
+    with col5:
+        avg = pf_average()
+        card_data = {"title": "Average Power Factor", "content": avg_pf}
+        card(card_data["title"], card_data["content"])
+    with col6:
+        avg = energy_average()
+        card_data = {"title": "Average Energy (in Kwh)", "content": avg_energy}
+        card(card_data["title"], card_data["content"])
+
+    st.write("---")
