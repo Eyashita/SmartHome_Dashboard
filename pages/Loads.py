@@ -9,7 +9,9 @@ import plotly.graph_objects as go
 import requests
 from streamlit_lottie import st_lottie
 import numpy as np
-import matplotlib.animation as animation
+import matplotlib.animation as animation 
+from matplotlib.animation import FuncAnimation
+import random
 
 
 warnings.filterwarnings("ignore")
@@ -81,99 +83,119 @@ for i in range(1, 9):  # Adjust the range to match your load count (1 to 8 in th
     LOAD_columns = [f'Timestamp', f'Voltage-{i}', f'Current-{i}', f'Power-{i}', f'Energy-{i}', f'Powerfactor-{i}', f'Frequency-{i}']
     LOAD_tables[i] = df[LOAD_columns].copy()  # Store the table in the dictionary
 
-# --- TIME SERIES PLOT --------------------------------------------------------------------------
-def create_animated_plot(load_table, load_number):
-    # Create a Matplotlib figure
-    fig, ax = plt.subplots()
-
-    # Define an initialization function (customize it based on your needs)
-    def init():
-        ax.clear()
-        ax.set_xlabel('Current')
-        ax.set_ylabel('Timestamp')
-        line, = ax.plot([], [], lw=2)
-        return line,
-
-    def animate(k):
-        # t is a parameter
-        t = 0.1 * k
-
-        # x, y values to be plotted
-        X = load_table[f"Current-{load_number}"]
-        Y = load_table['Timestamp']
-
-        # Update the data on the line object
-        line.set_data(X, Y)
-
-        return line,
-
-    # hiding the axis details
-    ax.axis('off')
-
-    # call the animator
-    anim = animation.FuncAnimation(fig, animate, init_func=init, blit=True)
-
-    # Display the Matplotlib plot in Streamlit
-    st.markdown(f"<h3 style='text-align:center;'>Load {i}</h3>", unsafe_allow_html=True)
-    st.pyplot(fig)
-
-
 # --- Filter data ------------------------------------------------------------------------------------------------------------
 st.sidebar.header("Choose your filter:")
-selected_loads = st.sidebar.multiselect("Pick LOAD(s)", range(1, 9))  # Allow selecting multiple loads
+selected_load = st.sidebar.selectbox("Pick a LOAD", range(1, 9))  # Allow selecting only one load
 
-filtered_tables = [LOAD_tables[i] for i in selected_loads]  # Get the tables for the selected loads
+# Display the filtered table using Streamlit for the selected load
+avg_current = LOAD_tables[selected_load][f'Current-{selected_load}'].mean()
+avg_voltage = LOAD_tables[selected_load][f'Voltage-{selected_load}'].mean()
+avg_power = LOAD_tables[selected_load][f'Power-{selected_load}'].mean()
+avg_pf = LOAD_tables[selected_load][f'Powerfactor-{selected_load}'].mean()
+avg_energy = LOAD_tables[selected_load][f'Energy-{selected_load}'].mean()
+avg_freq = LOAD_tables[selected_load][f'Frequency-{selected_load}'].mean()
+avg_current = round(avg_current, 3)
+avg_voltage = round(avg_voltage, 3)
+avg_power = round(avg_power, 3)
+avg_pf = round(avg_pf, 3)
+avg_freq = round(avg_freq, 3)
+avg_energy = round(avg_energy, 3)
 
-# Display the filtered tables using Streamlit
-for i, table in zip(selected_loads, filtered_tables):
-    avg_current = table[f'Current-{i}'].mean()
-    avg_voltage = table[f'Voltage-{i}'].mean()
-    avg_power = table[f'Power-{i}'].mean()
-    avg_pf = table[f'Powerfactor-{i}'].mean()
-    avg_energy = table[f'Energy-{i}'].mean()
-    avg_freq = table[f'Frequency-{i}'].mean()
-    avg_current = round(avg_current, 3)
-    avg_voltage = round(avg_voltage, 3)
-    avg_power = round(avg_power, 3)
-    avg_pf = round(avg_pf, 3)
-    avg_freq = round(avg_freq, 3)
-    avg_energy = round(avg_energy, 3)
+st.markdown(f"<h3 style='text-align:center;'>Load {selected_load}</h3>", unsafe_allow_html=True)
+st.write(len(df.index))
+# st.write(LOAD_tables[selected_load])
 
-    st.markdown(f"<h3 style='text-align:center;'>Load {i}</h3>", unsafe_allow_html=True)
-    st.write(LOAD_tables[i])
+# Visualizing cards
+col1, col2, col3 = st.columns(3)
+# Add content to the columns
+with col1:
+    card_data = {"title": "Average Current (in A)", "content": avg_current}
+    card(card_data["title"], card_data["content"])
+with col2:
+    card_data = {"title": "Average Power (in W)", "content": avg_power}
+    card(card_data["title"], card_data["content"])
+with col3:
+    card_data = {"title": "Average Voltage (in V)", "content": avg_voltage}
+    card(card_data["title"], card_data["content"])
 
-    load_table = LOAD_tables[i]
-    create_animated_plot(load_table, i)
+# Create another row of columns
+col4, col5, col6 = st.columns(3)
+
+# Add content to the new columns
+with col4:
+    card_data = {"title": "Average Frequency", "content": avg_freq}
+    card(card_data["title"], card_data["content"])
+with col5:
+    card_data = {"title": "Average Power Factor", "content": avg_pf}
+    card(card_data["title"], card_data["content"])
+with col6:
+    card_data = {"title": "Average Energy (in Kwh)", "content": avg_energy}
+    card(card_data["title"], card_data["content"])
+
+st.write("---")
 
 
-    col1, col2, col3 = st.columns(3)
-    # Add content to the columns
-    with col1:
-        card_data = {"title": "Average Current (in A)", "content": avg_current}
-        card(card_data["title"], card_data["content"])
-    with col2:
-        card_data = {"title": "Average Power (in W)", "content": avg_power}
-        card(card_data["title"], card_data["content"])
-    with col3:
-        card_data = {"title": "Average Voltage (in V)", "content": avg_voltage}
-        card(card_data["title"], card_data["content"])
+selected = st.selectbox("Select Attribute:", [f"Current-{selected_load}", f"Voltage-{selected_load}", f"Power-{selected_load}", f"Frequency-{selected_load}", f"Power Factor-{selected_load}"])
+# Line graph
+st.title(f'Time vs. {selected}')
+fig = px.line(df, x='Timestamp', y=selected)
+st.plotly_chart(fig, use_container_width=True)
+st.write("---")
 
-    # Create another row of columns
-    col4, col5, col6 = st.columns(3)
+# Histogram
+st.title(f"Histogram of {selected} on Time Axes")
+fig = px.histogram(df, x="Timestamp", y=selected, histfunc="avg")
+fig.update_xaxes(showgrid=True, ticklabelmode="period", dtick="M1", tickformat="%b\n%Y")
+fig.update_layout(bargap=0.1)
+scatter_trace = go.Scatter(mode="markers", x=df["Timestamp"], y=df[selected], name=f"Mean {selected}")
+fig.add_trace(scatter_trace)
+st.plotly_chart(fig, use_container_width=True)
+st.write("---")
 
-    # Add content to the new columns
-    with col4:
-        card_data = {"title": "Average Frequency", "content": avg_freq}
-        card(card_data["title"], card_data["content"])
-    with col5:
-        card_data = {"title": "Average Power Factor", "content": avg_pf}
-        card(card_data["title"], card_data["content"])
-    with col6:
-        card_data = {"title": "Average Energy (in Kwh)", "content": avg_energy}
-        card(card_data["title"], card_data["content"])
+# Time Series with Aligned Periods
+st.title('Time Series with Aligned Periods')
+fig = go.Figure()
+fig.add_trace(go.Scatter(
+    name=f"Current",
+    mode="markers+lines", x=df["Date"], y=df[f"Current-{selected_load}"],
+    marker_symbol="star"
+))
+fig.add_trace(go.Scatter(
+    name="Voltage",
+    mode="markers+lines", x=df["Date"], y=df[f"Voltage-{selected_load}"],
+    xperiod="M1",
+    xperiodalignment="start"
+))
+fig.add_trace(go.Scatter(
+    name="Power",
+    mode="markers+lines", x=df["Date"], y=df[f"Power-{selected_load}"],
+    xperiod="M1",
+    xperiodalignment="middle"
+))
+fig.add_trace(go.Bar(
+    name="Energy",
+    x=df["Date"], y=df[f"Energy-{selected_load}"],
+    xperiod="M1",
+    xperiodalignment="middle"
+))
+fig.update_xaxes(showgrid=True, ticklabelmode="period")
+st.plotly_chart(fig, use_container_width=True)
+st.write("---")
 
-    st.write("---")
+# Custome tick labels
+columns_to_melt = [f"Current-{selected_load}", f"Voltage-{selected_load}", f"Power-{selected_load}", f"Frequency-{selected_load}", f"Powerfactor-{selected_load}"]
+df_long = pd.melt(df, id_vars=["Timestamp", "Date"], value_vars=columns_to_melt, var_name="Variable", value_name="Value")
+st.title('Custom Tick Labels')
+fig = px.line(df_long, x="Date", y="Value", color="Variable", hover_data={"Date": "|%B %d, %Y"})
+fig.update_xaxes(
+    dtick="M1", tickformat="%b\n%Y", ticklabelmode="period")
+st.plotly_chart(fig, use_container_width=True)
 
-    load_table = LOAD_tables[i]
-    create_animated_plot(load_table, i)
-
+# Display the filtered DataFrame
+st.title("Data")
+st.write("Number of rows :",len(df.index))
+selected_columns = ["Timestamp", "Date", f"Current-{selected_load}", f"Voltage-{selected_load}", f"Power-{selected_load}", f"Frequency-{selected_load}", f"Powerfactor-{selected_load}", f"Energy-{selected_load}" ]
+df_selected = df[selected_columns]
+st.write(df_selected, use_container_width=True)
+st.write("Summary")
+st.write(df_selected.describe())

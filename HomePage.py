@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 import requests
 from streamlit_lottie import st_lottie
 import numpy as np
+import time
 
 warnings.filterwarnings("ignore")
 st.set_page_config(page_title="Dynamic Dashboard", page_icon = ":electric_plug:", layout = "wide")
@@ -34,12 +35,11 @@ def load_lottiurl(url):
 st.title(":electric_plug: IoT Enabled Smart Home Dashboard")
 st.markdown('<style> div.block-container{padding-top: 1rem;}</style>', unsafe_allow_html = True)
 st.write("---")
-
 # --- Importing Data --------------------------------------------------------------------------------------------------------
 
 # # Importing from MongoDB cloud
 # mongo_uri = ""
-
+ 
 # --- Import DATA FILE ----------------------------------------------------------------------------------------------------------------------
 fl = st.file_uploader(":file_folder: Upload a file", type=(["csv","txt","xlsx", "xls"]))
 
@@ -51,10 +51,9 @@ else:
     os.chdir(r"D:/Projects/Dashboard")
     df = pd.read_csv("data.csv", encoding = "ISO-8859-1")
 
-# --- Dates --------------------------------------------------------------------------------------------------------
+# --- Dates -------------------------------------------------------------------------------------------------------- 
 df["Timestamp"] = pd.to_datetime(df["Timestamp"])
 df["Date"] = df['Timestamp'].dt.date
-
 # Getting min and max date
 startDate = pd.to_datetime(df["Date"]).min()
 endDate = pd.to_datetime(df["Date"]).max()
@@ -74,7 +73,6 @@ df.dropna(axis=1, inplace=True)
 st.write("---")
 
 # ----------------------------------------------------------------------------
-
 # --- Creating AVG. columns ---
 df['Current'] = df[['Current-1', 'Current-2', 'Current-3', 'Current-4', 'Current-5', 'Current-6', 'Current-7', 'Current-8']].mean(axis=1)
 df['Voltage'] = df[['Voltage-1', 'Voltage-2', 'Voltage-3', 'Voltage-4', 'Voltage-5', 'Voltage-6', 'Voltage-7', 'Voltage-8']].mean(axis=1)
@@ -84,8 +82,6 @@ df['Power Factor'] = df[['Powerfactor-1', 'Powerfactor-2', 'Powerfactor-3', 'Pow
 df['Energy'] = df[['Energy-1', 'Energy-2', 'Energy-3', 'Energy-4', 'Energy-5', 'Energy-6', 'Energy-7', 'Energy-8']].mean(axis=1)
 # Drop columns with null values
 df.dropna(axis=1, inplace=True)
-# Display the filtered DataFrame
-st.write(df)
 
 # --- Average Current ---
 def current_average():
@@ -163,10 +159,7 @@ with col3:
     card_data = {"title": "Average Voltage (in V)", "content": avg}
     card(card_data["title"], card_data["content"])
 
-# Create another row of columns
 col4, col5, col6 = st.columns(3)
-
-# Add content to the new columns
 with col4:
     avg = freq_average()
     card_data = {"title": "Average Frequency", "content": avg}
@@ -179,73 +172,70 @@ with col6:
     avg = energy_average()
     card_data = {"title": "Average Energy (in Kwh)", "content": avg}
     card(card_data["title"], card_data["content"])
-
 st.write("---")
-# ---------------------------------------------------------------
 
-# # --- CREATING TABLES FOR LOADS ----------------------------------------------------------------
+selected = st.selectbox("Select Attribute:", ["Current", "Voltage", "Power", "Frequency", "Power Factor"])
 
-# LOAD_tables = {}  # Create an empty dictionary to store the tables
+# Line graph
+st.title(f'Time vs. {selected}')
+fig = px.line(df, x='Timestamp', y=selected)
+st.plotly_chart(fig, use_container_width=True)
+st.write("---")
 
-# for i in range(1, 9):  # Adjust the range to match your load count (1 to 8 in this case)
-#     LOAD_columns = [f'Voltage-{i}', f'Current-{i}', f'Power-{i}', f'Energy-{i}', f'Powerfactor-{i}', f'Frequency-{i}']
-#     LOAD_tables[i] = df[LOAD_columns].copy()  # Store the table in the dictionary
+# Histogram
+st.title(f"Histogram of {selected} on Time Axes")
+fig = px.histogram(df, x="Timestamp", y=selected, histfunc="avg")
+fig.update_xaxes(showgrid=True, ticklabelmode="period", dtick="M1", tickformat="%b\n%Y")
+fig.update_layout(bargap=0.1)
+scatter_trace = go.Scatter(mode="markers", x=df["Timestamp"], y=df[selected], name=f"Mean {selected}")
+fig.add_trace(scatter_trace)
+st.plotly_chart(fig, use_container_width=True)
+st.write("---")
 
-# # --- Filter data ------------------------------------------------------------------------------------------------------------
-# st.sidebar.header("Choose your filter:")
-# selected_loads = st.sidebar.multiselect("Pick LOAD(s)", range(1, 9))  # Allow selecting multiple loads
+# Time Series with Aligned Periods
+st.title('Time Series with Aligned Periods')
+fig = go.Figure()
+fig.add_trace(go.Scatter(
+    name="Current",
+    mode="markers+lines", x=df["Date"], y=df["Current"],
+    marker_symbol="star"
+))
+fig.add_trace(go.Scatter(
+    name="Voltage",
+    mode="markers+lines", x=df["Date"], y=df["Voltage"],
+    xperiod="M1",
+    xperiodalignment="start"
+))
+fig.add_trace(go.Scatter(
+    name="Power",
+    mode="markers+lines", x=df["Date"], y=df["Power"],
+    xperiod="M1",
+    xperiodalignment="middle"
+))
+fig.add_trace(go.Bar(
+    name="Energy",
+    x=df["Date"], y=df["Energy"],
+    xperiod="M1",
+    xperiodalignment="middle"
+))
+fig.update_xaxes(showgrid=True, ticklabelmode="period")
+st.plotly_chart(fig, use_container_width=True)
+st.write("---")
 
-# filtered_tables = [LOAD_tables[i] for i in selected_loads]  # Get the tables for the selected loads
 
-# # Display the filtered tables using Streamlit
-# for i, table in zip(selected_loads, filtered_tables):
-#     avg_current = table[f'Current-{i}'].mean()
-#     avg_voltage = table[f'Voltage-{i}'].mean()
-#     avg_power = table[f'Power-{i}'].mean()
-#     avg_pf = table[f'Powerfactor-{i}'].mean()
-#     avg_energy = table[f'Energy-{i}'].mean()
-#     avg_freq = table[f'Frequency-{i}'].mean()
-#     avg_current = round(avg_current, 3)
-#     avg_voltage = round(avg_voltage, 3)
-#     avg_power = round(avg_power, 3)
-#     avg_pf = round(avg_pf, 3)
-#     avg_freq = round(avg_freq, 3)
-#     avg_energy = round(avg_energy, 3)
+st.title('Custom Tick Labels')
+columns = ["Current", "Voltage", "Power", "Frequency", "Power Factor"]
+fig = px.line(df, x="Date", y= columns, hover_data={"Date": "|%B %d, %Y"})
+fig.update_xaxes(
+    dtick="M1", tickformat="%b\n%Y", ticklabelmode="period")
+st.plotly_chart(fig, use_container_width=True)
 
-#     st.markdown(f"<h3 style='text-align:center;'>Load {i}</h3>", unsafe_allow_html=True)
+# Display the filtered DataFrame
+st.title("Data")
+st.write("Number of rows :",len(df.index))
+selected_columns = ["Timestamp", "Date", "Current", "Voltage", "Power", "Frequency", "Power Factor", "Energy"]
+df_selected = df[selected_columns]
+st.write(df_selected, use_container_width=True)
+st.write("Summary")
+st.write(df_selected.describe())
 
-#     col1, col2, col3 = st.columns(3)
-#     # Add content to the columns
-#     with col1:
-#         card_data = {"title": "Average Current (in A)", "content": avg_current}
-#         card(card_data["title"], card_data["content"])
-#     with col2:
-#         avg = power_average()
-#         card_data = {"title": "Average Power (in W)", "content": avg_power}
-#         card(card_data["title"], card_data["content"])
-#     with col3:
-#         avg = voltage_average()
-#         card_data = {"title": "Average Voltage (in V)", "content": avg_voltage}
-#         card(card_data["title"], card_data["content"])
-
-#     # Create another row of columns
-#     col4, col5, col6 = st.columns(3)
-
-#     # Add content to the new columns
-#     with col4:
-#         avg = freq_average()
-#         card_data = {"title": "Average Frequency", "content": avg_freq}
-#         card(card_data["title"], card_data["content"])
-#     with col5:
-#         avg = pf_average()
-#         card_data = {"title": "Average Power Factor", "content": avg_pf}
-#         card(card_data["title"], card_data["content"])
-#     with col6:
-#         avg = energy_average()
-#         card_data = {"title": "Average Energy (in Kwh)", "content": avg_energy}
-#         card(card_data["title"], card_data["content"])
-
-#     st.write("---")
-
-# st.set_page_config( page_title = "Multipage App", page_icon = ":electric_plug:",)
-# st.title("Main Page")
