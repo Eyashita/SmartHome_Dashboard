@@ -4,13 +4,8 @@ import plotly.express as px
 import pandas as pd
 import os
 import warnings
-import matplotlib.pyplot as plt
-from matplotlib.patches import Arc
 import plotly.graph_objects as go
 import requests
-from streamlit_lottie import st_lottie
-import numpy as np
-import time
 
 warnings.filterwarnings("ignore")
 st.set_page_config(page_title="Dynamic Dashboard", page_icon = ":electric_plug:", layout = "wide")

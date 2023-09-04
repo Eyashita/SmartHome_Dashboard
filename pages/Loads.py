@@ -3,15 +3,7 @@ import plotly.express as px
 import pandas as pd
 import os
 import warnings
-import matplotlib.pyplot as plt
-from matplotlib.patches import Arc
 import plotly.graph_objects as go
-import requests
-from streamlit_lottie import st_lottie
-import numpy as np
-import matplotlib.animation as animation 
-from matplotlib.animation import FuncAnimation
-import random
 
 
 warnings.filterwarnings("ignore")
@@ -87,6 +79,8 @@ for i in range(1, 9):  # Adjust the range to match your load count (1 to 8 in th
 st.sidebar.header("Choose your filter:")
 selected_load = st.sidebar.selectbox("Pick a LOAD", range(1, 9))  # Allow selecting only one load
 
+st.markdown(f"<h1 style='text-align:center;'>Load {selected_load}</h1>", unsafe_allow_html=True)
+
 # Display the filtered table using Streamlit for the selected load
 avg_current = LOAD_tables[selected_load][f'Current-{selected_load}'].mean()
 avg_voltage = LOAD_tables[selected_load][f'Voltage-{selected_load}'].mean()
@@ -100,10 +94,6 @@ avg_power = round(avg_power, 3)
 avg_pf = round(avg_pf, 3)
 avg_freq = round(avg_freq, 3)
 avg_energy = round(avg_energy, 3)
-
-st.markdown(f"<h3 style='text-align:center;'>Load {selected_load}</h3>", unsafe_allow_html=True)
-st.write(len(df.index))
-# st.write(LOAD_tables[selected_load])
 
 # Visualizing cards
 col1, col2, col3 = st.columns(3)
