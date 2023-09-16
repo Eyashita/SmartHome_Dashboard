@@ -2,10 +2,13 @@ import serial
 import time
 import csv
 from datetime import datetime
-from pymongo import MongoClient
-import os
 import random
+import pymongo
 
+# Initialize MongoDB connection (replace with your MongoDB connection string)
+client = pymongo.MongoClient("mongodb+srv://eyashita_1o:chunmun1010@cluster0.ljpgyjo.mongodb.net/")
+db = client["Dashboard"]
+collection = db["Household data"]
 
 start_date = datetime(2021, 1, 1)
 end_date = datetime(2023, 12, 31)
@@ -69,71 +72,6 @@ while True:
         power_factor8 = random.uniform(0.855, 0.945)
         power8 = round(voltage8 * current8 * power_factor8, 2)
         energy8 = round(power8 / 1000, 2)  # Energy in KWh
-       
-
-        print('voltage1')
-        print(voltage1)
-        print(current1)
-        print(power1)
-        print(energy1)
-        print(frequency1)
-        print(power_factor1)
-
-        print('voltage2')
-        print(voltage2)
-        print(current2)
-        print(power2)
-        print(energy2)
-        print(frequency2)
-        print(power_factor2)
-
-        print('voltage3')
-        print(voltage3)
-        print(current3)
-        print(power3)
-        print(energy3)
-        print(frequency3)
-        print(power_factor3)
-
-        print('voltage4')
-        print(voltage4)
-        print(current4)
-        print(power4)
-        print(energy4)
-        print(frequency4)
-        print(power_factor4)
-
-        print('voltage5')
-        print(voltage5)
-        print(current5)
-        print(power5)
-        print(energy5)
-        print(frequency5)
-        print(power_factor5)
-
-        print('voltage6')
-        print(voltage6)
-        print(current6)
-        print(power6)
-        print(energy6)
-        print(frequency6)
-        print(power_factor6)
-
-        print('voltage7')
-        print(voltage7)
-        print(current7)
-        print(power7)
-        print(energy7)
-        print(frequency7)
-        print(power_factor7)
-
-        print('voltage8')
-        print(voltage8)
-        print(current8)
-        print(power8)
-        print(energy8)
-        print(frequency8)
-        print(power_factor8)
 
         data = [
            {'Voltage-1': voltage1, 'Current-1': current1, 'Power-1': power1, 'Energy-1': energy1, 'Frequency-1': frequency1, 'Powerfactor-1': power_factor1,
@@ -143,41 +81,18 @@ while True:
              'Voltage-5': voltage5, 'Current-5': current5, 'Power-5': power5, 'Energy-5': energy5, 'Frequency-5': frequency5, 'Powerfactor-5': power_factor5,
              'Voltage-6': voltage6, 'Current-6': current6, 'Power-6': power6, 'Energy-6': energy6, 'Frequency-6': frequency6, 'Powerfactor-6': power_factor6,
              'Voltage-7': voltage7, 'Current-7': current7, 'Power-7': power7, 'Energy-7': energy7, 'Frequency-7': frequency7, 'Powerfactor-7': power_factor7,
-             'Voltage-8': voltage8, 'Current-8': current8, 'Power-8': power8, 'Energy-8': energy8, 'Frequency-8': frequency8, 'Powerfactor-8': power_factor8,} 
+             'Voltage-8': voltage8, 'Current-8': current8, 'Power-8': power8, 'Energy-8': energy8, 'Frequency-8': frequency8, 'Powerfactor-8': power_factor8,}
         ]
 
-        # Specify the path and filename for the CSV file
-        csv_file = 'data.csv'
+        # Get the current timestamp
+        timestamp = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
 
-        # Open the file in append mode
-        with open(csv_file, mode='a') as file:
-            # Define the fieldnames (column headers)
-            fieldnames = ['Timestamp', 'Voltage-1', 'Current-1', 'Power-1', 'Energy-1', 'Frequency-1', 'Powerfactor-1',
-                  'Voltage-2', 'Current-2', 'Power-2', 'Energy-2', 'Frequency-2', 'Powerfactor-2',
-                  'Voltage-3', 'Current-3', 'Power-3', 'Energy-3', 'Frequency-3', 'Powerfactor-3',
-                  'Voltage-4', 'Current-4', 'Power-4', 'Energy-4', 'Frequency-4', 'Powerfactor-4',
-                  'Voltage-5', 'Current-5', 'Power-5', 'Energy-5', 'Frequency-5', 'Powerfactor-5',
-                  'Voltage-6', 'Current-6', 'Power-6', 'Energy-6', 'Frequency-6', 'Powerfactor-6',
-                  'Voltage-7', 'Current-7', 'Power-7', 'Energy-7', 'Frequency-7', 'Powerfactor-7',
-                  'Voltage-8', 'Current-8', 'Power-8', 'Energy-8', 'Frequency-8', 'Powerfactor-8',]
+        # Iterate over the data and insert each document into MongoDB
+        for row in data:
+            row['Timestamp'] = timestamp
+            collection.insert_one(row)
 
-            # Create a CSV writer object
-            writer = csv.DictWriter(file, fieldnames=fieldnames)
-
-            # Check if the file is empty
-            if file.tell() == 0:
-               # Write the fieldnames as the header row
-                writer.writeheader()
-
-            # Get the current timestamp
-            timestamp = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-
-            # Iterate over the data and write each row
-            for row in data:
-                row['Timestamp'] = timestamp
-                writer.writerow(row)
-
-        print('Data has been written to the CSV file.')
+        print('Data has been written to MongoDB.')
 
     except IndexError:
         print('index ERROR')
@@ -185,4 +100,4 @@ while True:
         print('value ERROR')
     
     # Short delay to avoid busy-waiting
-    time.sleep(2) 
+    time.sleep(1)

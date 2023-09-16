@@ -1,23 +1,11 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
-import os
 import warnings
 import plotly.graph_objects as go
 
-
 warnings.filterwarnings("ignore")
 st.set_page_config(page_title="LOAD", page_icon = ":electric_plug:", layout = "wide")
-
-# --------------------------------------------------------------------------------------------------------------------------
-st.title(":electric_plug: IoT Enabled Smart Home Dashboard")
-st.markdown('<style> div.block-container{padding-top: 1rem;}</style>', unsafe_allow_html = True)
-st.write("---")
-
-# --- Importing Data --------------------------------------------------------------------------------------------------------
-
-# # Importing from MongoDB cloud
-# mongo_uri = ""
 
 # --- import css file ---
 def local_css(file_name):
@@ -25,15 +13,14 @@ def local_css(file_name):
   st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 local_css("./Style.css")
 
+# --------------------------------------------------------------------------------------------------------------------------
+st.title(":electric_plug: IoT Enabled Smart Home Dashboard")
+st.markdown('<style> div.block-container{padding-top: 1rem;}</style>', unsafe_allow_html = True)
+st.write("---")
+
 # --- Import DATA FILE ----------------------------------------------------------------------------------------------------------------------
 fl = st.file_uploader(":file_folder: Upload a file", type=(["csv","txt","xlsx", "xls"]))
-
-if fl is not None:
-    filename = fl.name
-    st.write(filename)
-    df = pd.read_csv(filename, encoding = "ISO-8859-1")
-else:
-    df = pd.read_csv("data.csv", encoding = "ISO-8859-1")
+df = st.session_state['df'] 
 
 # --- Dates --------------------------------------------------------------------------------------------------------
 df["Timestamp"] = pd.to_datetime(df["Timestamp"])
@@ -85,7 +72,7 @@ avg_current = LOAD_tables[selected_load][f'Current-{selected_load}'].mean()
 avg_voltage = LOAD_tables[selected_load][f'Voltage-{selected_load}'].mean()
 avg_power = LOAD_tables[selected_load][f'Power-{selected_load}'].mean()
 avg_pf = LOAD_tables[selected_load][f'Powerfactor-{selected_load}'].mean()
-avg_energy = LOAD_tables[selected_load][f'Energy-{selected_load}'].mean()
+avg_energy = LOAD_tables[selected_load][f'Energy-{selected_load}'].sum()
 avg_freq = LOAD_tables[selected_load][f'Frequency-{selected_load}'].mean()
 avg_current = round(avg_current, 3)
 avg_voltage = round(avg_voltage, 3)
@@ -118,7 +105,7 @@ with col5:
     card_data = {"title": "Average Power Factor", "content": avg_pf}
     card(card_data["title"], card_data["content"])
 with col6:
-    card_data = {"title": "Average Energy (in Kwh)", "content": avg_energy}
+    card_data = {"title": "Total Energy (in Kwh)", "content": avg_energy}
     card(card_data["title"], card_data["content"])
 
 st.write("---")
