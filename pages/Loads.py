@@ -21,7 +21,10 @@ st.write("---")
 # --- Import DATA FILE ----------------------------------------------------------------------------------------------------------------------
 fl = st.file_uploader(":file_folder: Upload a file", type=(["csv","txt","xlsx", "xls"]))
 df = st.session_state['df'] 
+df = df.fillna(0)
 
+total_columns = df.shape[1]
+n = (total_columns-2)//6
 # --- Dates --------------------------------------------------------------------------------------------------------
 df["Timestamp"] = pd.to_datetime(df["Timestamp"])
 df["Date"] = df['Timestamp'].dt.date
@@ -57,13 +60,13 @@ def card(card_title, card_content):
 
 LOAD_tables = {}  # Create an empty dictionary to store the tables
 
-for i in range(1, 9):  # Adjust the range to match your load count (1 to 8 in this case)
+for i in range(1, n+1):  # Adjust the range to match your load count
     LOAD_columns = [f'Timestamp', f'Voltage-{i}', f'Current-{i}', f'Power-{i}', f'Energy-{i}', f'Powerfactor-{i}', f'Frequency-{i}']
     LOAD_tables[i] = df[LOAD_columns].copy()  # Store the table in the dictionary
 
 # --- Filter data ------------------------------------------------------------------------------------------------------------
 st.sidebar.header("Choose your filter:")
-selected_load = st.sidebar.selectbox("Pick a LOAD", range(1, 9))  # Allow selecting only one load
+selected_load = st.sidebar.selectbox("Pick a LOAD", range(1, n+1))  # Allow selecting only one load
 
 st.markdown(f"<h1 style='text-align:center;'>Load {selected_load}</h1>", unsafe_allow_html=True)
 
@@ -111,7 +114,7 @@ with col6:
 st.write("---")
 
 
-selected = st.selectbox("Select Attribute:", [f"Current-{selected_load}", f"Voltage-{selected_load}", f"Power-{selected_load}", f"Frequency-{selected_load}", f"Power Factor-{selected_load}"])
+selected = st.selectbox("Select Attribute:", [f"Current-{selected_load}", f"Voltage-{selected_load}", f"Power-{selected_load}", f"Frequency-{selected_load}", f"Powerfactor-{selected_load}"])
 # Line graph
 st.title(f'Time vs. {selected}')
 fig = px.line(df, x='Timestamp', y=selected)

@@ -8,7 +8,7 @@ import pymongo
 # Initialize MongoDB connection (replace with your MongoDB connection string)
 client = pymongo.MongoClient("mongodb+srv://eyashita_1o:chunmun1010@cluster0.ljpgyjo.mongodb.net/")
 db = client["Dashboard"]
-collection = db["Household data"]
+collection = db["Household_data"]
 
 start_date = datetime(2021, 1, 1)
 end_date = datetime(2023, 12, 31)

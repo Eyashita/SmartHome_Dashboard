@@ -6,6 +6,8 @@ import warnings
 import plotly.graph_objects as go
 import pymongo
 import time
+import uuid
+
 
 warnings.filterwarnings("ignore")
 st.set_page_config(page_title="Dynamic Dashboard", page_icon = ":electric_plug:", layout = "wide")
@@ -25,17 +27,10 @@ st.write("---")
 # # Importing from MongoDB cloud
 client = pymongo.MongoClient("mongodb+srv://eyashita_1o:chunmun1010@cluster0.ljpgyjo.mongodb.net/")
 db = client["Dashboard"]
-collection = db["Household data"]
+collection = db["Household_data"]
  
 # --- Import DATA FILE ----------------------------------------------------------------------------------------------------------------------
 fl = st.file_uploader(":file_folder: Upload a file", type=(["csv","txt","xlsx", "xls"]))
-
-# if fl is not None:
-#     filename = fl.name
-#     st.write(filename)
-#     df = pd.read_csv(filename, encoding = "ISO-8859-1")
-# else:
-#     df = pd.read_csv("data.csv", encoding = "ISO-8859-1")
 
 @st.cache_data(ttl=1)
 def load_data():
@@ -46,15 +41,17 @@ def load_data():
 
 df = load_data()
 st.session_state['df'] = df
+df = df.fillna(0)
 
-# Create a Streamlit interval to refresh data every 5 seconds
-refresh_interval = st.experimental_get_query_params().get("refresh_interval", [1])[0]
-st.experimental_set_query_params(refresh_interval=refresh_interval)  # Persist query parameter
+# # Create a Streamlit interval to refresh data every 5 seconds
+# refresh_interval = st.experimental_get_query_params().get("refresh_interval", [1])[0]
+# st.experimental_set_query_params(refresh_interval=refresh_interval)  # Persist query parameter
 
-# Create a Streamlit interval to refresh data every 5 seconds
-refresh_interval = 1 * 1000
+# # Create a Streamlit interval to refresh data every 5 seconds
+# refresh_interval = 1 * 1000
 
-@st.cache_data(ttl=refresh_interval)
+# @st.cache_data(ttl=refresh_interval)
+
 def update_data():
     # Fetch updated data from MongoDB and convert to DataFrame
     cursor = collection.find({})
@@ -67,9 +64,12 @@ while True:
     with placeholder.container():
         # placeholder.text(f"Data Loaded at: {time.strftime('%H:%M:%S')}")
         df = update_data()
+        st.write(len(df))
+        df = df.fillna(0)
         # --- Dates -------------------------------------------------------------------------------------------------------- 
         df["Timestamp"] = pd.to_datetime(df["Timestamp"])
         df["Date"] = df['Timestamp'].dt.date
+
         # Getting min and max date
         startDate = pd.to_datetime(df["Date"]).min()
         endDate = pd.to_datetime(df["Date"]).max()
@@ -86,16 +86,47 @@ while True:
         df = df[(df["Date"] >= date1.date()) & (df["Date"] <= date2.date())].copy()
         # Drop columns with null values
         df.dropna(axis=1, inplace=True)
+        
         st.write("---")
 
         # ----------------------------------------------------------------------------
         # --- Creating AVG. columns ---
-        df['Current'] = df[['Current-1', 'Current-2', 'Current-3', 'Current-4', 'Current-5', 'Current-6', 'Current-7', 'Current-8']].sum(axis=1)
-        df['Voltage'] = df[['Voltage-1', 'Voltage-2', 'Voltage-3', 'Voltage-4', 'Voltage-5', 'Voltage-6', 'Voltage-7', 'Voltage-8']].mean(axis=1)
-        df['Power'] = df[['Power-1', 'Power-2', 'Power-3', 'Power-4', 'Power-5', 'Power-6', 'Power-7', 'Power-8']].sum(axis=1)
-        df['Frequency'] = df[['Frequency-1', 'Frequency-2', 'Frequency-3', 'Frequency-4', 'Frequency-5', 'Frequency-6', 'Frequency-7', 'Frequency-8']].mean(axis=1)
-        df['Power Factor'] = df[['Powerfactor-1', 'Powerfactor-2', 'Powerfactor-3', 'Powerfactor-4', 'Powerfactor-5', 'Powerfactor-6', 'Powerfactor-7', 'Powerfactor-8']].mean(axis=1)
-        df['Energy'] = df[['Energy-1', 'Energy-2', 'Energy-3', 'Energy-4', 'Energy-5', 'Energy-6', 'Energy-7', 'Energy-8']].sum(axis=1)
+        prefix = "Voltage-"
+        # Use list comprehension to select columns with the specified prefix
+        selected_columns = [col for col in df.columns if col.startswith(prefix)]
+        # Sum the selected columns along the rows to create the 'Current' column
+        df['Voltage'] = df[selected_columns].sum(axis=1)
+
+        prefix = "Current-"
+        # Use list comprehension to select columns with the specified prefix
+        selected_columns = [col for col in df.columns if col.startswith(prefix)]
+        # Sum the selected columns along the rows to create the 'Current' column
+        df['Current'] = df[selected_columns].sum(axis=1)
+
+        prefix = "Power-"
+        # Use list comprehension to select columns with the specified prefix
+        selected_columns = [col for col in df.columns if col.startswith(prefix)]
+        # Sum the selected columns along the rows to create the 'Current' column
+        df['Power'] = df[selected_columns].mean(axis=1)
+
+        prefix = "Frequency-"
+        # Use list comprehension to select columns with the specified prefix
+        selected_columns = [col for col in df.columns if col.startswith(prefix)]
+        # Sum the selected columns along the rows to create the 'Current' column
+        df['Frequency'] = df[selected_columns].mean(axis=1)
+
+        prefix = "Powerfactor-"
+        # Use list comprehension to select columns with the specified prefix
+        selected_columns = [col for col in df.columns if col.startswith(prefix)]
+        # Sum the selected columns along the rows to create the 'Current' column
+        df['Powerfactor'] = df[selected_columns].mean(axis=1)
+
+        prefix = "Energy-"
+        # Use list comprehension to select columns with the specified prefix
+        selected_columns = [col for col in df.columns if col.startswith(prefix)]
+        # Sum the selected columns along the rows to create the 'Current' column
+        df['Energy'] = df[selected_columns].sum(axis=1)
+
         # Drop columns with null values
         df.dropna(axis=1, inplace=True)
 
@@ -135,7 +166,7 @@ while True:
 
         # --- Average PowerFactor ---
         def pf_average():
-            pf_values = df["Power Factor"]
+            pf_values = df["Powerfactor"]
             if pf_values.empty:
                 return None
             total = pf_values.sum()
@@ -191,7 +222,7 @@ while True:
             card(card_data["title"], card_data["content"])
         st.write("---")
 
-        selected = st.selectbox("Select Attribute:", ["Current", "Voltage", "Power", "Frequency", "Power Factor"])
+        selected = st.selectbox("Select Attribute:", ["Current", "Voltage", "Power", "Frequency", "Powerfactor"])
 
         # Line graph
         st.title(f'Time vs. {selected}')
@@ -241,7 +272,7 @@ while True:
 
 
         st.title('Custom Tick Labels')
-        columns = ["Current", "Voltage", "Power", "Frequency", "Power Factor"]
+        columns = ["Current", "Voltage", "Power", "Frequency", "Powerfactor"]
         fig = px.line(df, x="Date", y= columns, hover_data={"Date": "|%B %d, %Y"})
         fig.update_xaxes(
         dtick="M1", tickformat="%b\n%Y", ticklabelmode="period")
@@ -250,7 +281,7 @@ while True:
         # Display the filtered DataFrame
         st.title("Data")
         st.write("Number of rows :",len(df.index))
-        selected_columns = ["Timestamp", "Date", "Current", "Voltage", "Power", "Frequency", "Power Factor", "Energy"]
+        selected_columns = ["Timestamp", "Date", "Current", "Voltage", "Power", "Frequency", "Powerfactor", "Energy"]
         df_selected = df[selected_columns]
         st.write(df_selected, use_container_width=True)
         st.write("Summary")
